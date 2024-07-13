@@ -64,12 +64,18 @@ else
     if [ $ngx_found = no ]; then
         ngx_feature="ModSecurity library in /usr/local/modsecurity"
         ngx_feature_path="/usr/local/modsecurity/include"
-        if [ $NGX_RPATH = YES ]; then
-            ngx_feature_libs="-R/usr/local/modsecurity/lib -L/usr/local/modsecurity/lib -lmodsecurity"
-        elif [ "$NGX_IGNORE_RPATH" != "YES" -a $NGX_SYSTEM = "Linux" ]; then
-            ngx_feature_libs="-Wl,-rpath,/usr/local/modsecurity/lib -L/usr/local/modsecurity/lib -lmodsecurity"
-        else
-            ngx_feature_libs="-L/usr/local/modsecurity/lib -lmodsecurity"
+        # Try dynamic lib
+        if [ -f /usr/local/modsecurity/lib/libmodsecurity.so ]; then
+            if [ $NGX_RPATH = YES ]; then
+                ngx_feature_libs="-R/usr/local/modsecurity/lib -L/usr/local/modsecurity/lib -lmodsecurity"
+            elif [ "$NGX_IGNORE_RPATH" != "YES" -a $NGX_SYSTEM = "Linux" ]; then
+                ngx_feature_libs="-Wl,-rpath,/usr/local/modsecurity/lib -L/usr/local/modsecurity/lib -lmodsecurity"
+            else
+                ngx_feature_libs="-L/usr/local/modsecurity/lib -lmodsecurity"
+            fi
+        # Fallback to static lib
+        elif [ -f /usr/local/modsecurity/lib/libmodsecurity.a ]; then
+            ngx_feature_libs="-L/usr/local/modsecurity/lib -lmodsecurity -Wl,-Bstatic -lmodsecurity -Wl,-Bdynamic"
         fi
 
         . auto/feature
